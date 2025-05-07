@@ -1,1 +1,7 @@
+# Criar abas
+        self.tabview = ctk.CTkTabview(main_frame, width=950, height=850)
+        self.tabview.pack(expand=True, fill="both", pady=(0,20))
 
+        self.tab_dados = self.tabview.add("Dados Gerais")
+        self.tab_checklist = self.tabview.add("Checklist")
+        self.tab_imagens = self.tabview.add("Imagens")
