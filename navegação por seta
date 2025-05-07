@@ -1,0 +1,23 @@
+  # Movimento para BAIXO (↓)
+  if event.keysym == "Down":
+    new_row = min(current_row, total_rows - 1)
+    if new_row < total_rows:
+      self.entry_matrix[new_row][current_col-1].focus()
+   
+  # Movimento para CIMA (↑)
+  elif event.keysym == "Up":
+    new_row = max(current_row - 2, 0)
+    if new_row >= 0:
+      self.entry_matrix[new_row][current_col-1].focus()
+
+  # Movimento para DIREITA (→)
+  elif event.keysym == "Right":
+    new_col = min(current_col, total_cols)
+    if new_col <= total_cols:
+      self.entry_matrix[current_row-1][new_col-1].focus()
+
+  # Movimento para ESQUERDA (←)
+  elif event.keysym == "Left":
+    new_col = max(current_col - 2, 1)
+    if new_col >= 1:
+      self.entry_matrix[current_row-1][new_col-1].focus()
