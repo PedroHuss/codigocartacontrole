@@ -1,0 +1,76 @@
+(EDIÇÃO DE IMAGEM:)
+
+# Rotacionar a imagem original e atualizar a exibição
+        self.displayed_image = self.original_image.rotate(-self.rotation_angle, expand=True)
+        self.atualizar_exibicao_imagem()
+    
+    def atualizar_exibicao_imagem(self):
+        if not self.displayed_image:
+            return
+        
+        img = self.displayed_image.copy()
+        img.thumbnail((800, 600))
+        
+        self.scale_factor = min(
+            800 / self.displayed_image.width,
+            600 / self.displayed_image.height
+        )
+        
+        self.current_image_tk = ImageTk.PhotoImage(img)
+        
+        self.canvas.delete("all")
+        self.canvas.create_image(
+            (800 - img.width) // 2,
+            (600 - img.height) // 2,
+            anchor="nw", 
+            image=self.current_image_tk
+        )
+    
+    def cortar_imagem(self):
+        try:
+            # Obter coordenadas do retângulo de seleção
+            x1, x2 = sorted([self.crop_coords["x1"], self.crop_coords["x2"]])
+            y1, y2 = sorted([self.crop_coords["y1"], self.crop_coords["y2"]])
+            
+            # Calcular coordenadas reais na imagem exibida
+            img_display_width = self.current_image_tk.width()
+            img_display_height = self.current_image_tk.height()
+            
+            offset_x = (800 - img_display_width) // 2
+            offset_y = (600 - img_display_height) // 2
+            
+            # Ajustar coordenadas para a imagem exibida
+            x1 = max(0, x1 - offset_x)
+            x2 = min(img_display_width, x2 - offset_x)
+            y1 = max(0, y1 - offset_y)
+            y2 = min(img_display_height, y2 - offset_y)
+            
+            # Converter para coordenadas na imagem original (já rotacionada)
+            scale_x = self.displayed_image.width / img_display_width
+            scale_y = self.displayed_image.height / img_display_height
+            
+            x1 = int(x1 * scale_x)
+            x2 = int(x2 * scale_x)
+            y1 = int(y1 * scale_y)
+            y2 = int(y2 * scale_y)
+            
+            # Garantir que as coordenadas estão dentro dos limites
+            x1 = max(0, x1)
+            y1 = max(0, y1)
+            x2 = min(self.displayed_image.width, x2)
+            y2 = min(self.displayed_image.height, y2)
+            
+            # Fazer o corte na imagem já rotacionada
+            img_cortada = self.displayed_image.crop((x1, y1, x2, y2))
+            
+            # Salvar a imagem já rotacionada e cortada
+            self.imagens_adicionadas.append({
+                "original": self.original_image,
+                "cropped": img_cortada,
+                "coords": (x1, y1, x2, y2)
+            })
+            
+            self.atualizar_galeria()
+            
+        except Exception as e:
+            print(f"Erro ao cortar imagem: {e}")
