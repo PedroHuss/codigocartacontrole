@@ -1,0 +1,143 @@
+    def gerar_pdf(self):
+        try:
+            pdf = FPDF()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            
+            # Página 1 - Dados
+            pdf.add_page()
+            
+            if os.path.exists(LOGO_PATH):
+                try:
+                    with Image.open(LOGO_PATH) as img:
+                        width, height = img.size
+                    
+                    if width > 500 or height > 500:
+                        pdf.image(LOGO_PATH, x=10, y=8, w=40)
+                    else:
+                        pdf.image(LOGO_PATH, x=10, y=8)
+                except Exception as e:
+                    print(f"Erro ao inserir logo: {str(e)}")
+            
+            pdf.set_font("Arial", "B", 16)
+            pdf.cell(0, 10, "Carta de Controle - Dimensional", 0, 1, "C")
+            pdf.set_font("Arial", "", 12)
+            pdf.cell(0, 10, "LINHA: Estruturas", 0, 1, "C")
+            pdf.ln(10)
+            
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, "Dados Gerais", 0, 1)
+            pdf.set_font("Arial", "", 10)
+            
+            for campo, entry in self.entradas.items():
+                if campo in ["Projeto", "Número do Pedido (ODF)", "Nota Fiscal", "Data da Inspeção", "Inspetor"]:
+                    pdf.cell(70, 8, f"{campo}:", border=1)
+                    pdf.cell(120, 8, entry.get(), border=1, ln=1)
+            
+            pdf.ln(10)
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, "Medições", 0, 1)
+            
+            pdf.set_font("Arial", "B", 10)
+            pdf.cell(70, 8, "Cota", border=1, align="C")
+            for i in range(1, 5):
+                pdf.cell(30, 8, f"Medição {i}", border=1, align="C")
+            pdf.ln()
+            
+            pdf.set_font("Arial", "", 10)
+            cotas = [
+                "L", "D", "H/2", "F", "T", "Distância entre Furos", "Início ao 1º Furo", 
+                "Posicionamento do Olhal de Suspensão", "Comprimento Suporte Fusível", 
+                "Comprimento Sapata", "Comprimento Suporte Comutador",
+                "Comprimento Guia Lateral U", "Largura da Estrutura",
+                "Posicionamento do Suporte", "Suporte Porta Fusível",
+                "Fixação P.A", "Guia Lateral U", "Número de Série"
+            ]
+            
+            for cota in cotas:
+                pdf.cell(70, 8, cota, border=1)
+                for i in range(1, 5):
+                    chave = f"Medição {i} - {cota}"
+                    if chave in self.entradas:
+                        pdf.cell(30, 8, self.entradas[chave].get(), border=1)
+                pdf.ln()
+            
+            # Página 2 - Checklist
+            pdf.add_page()
+            pdf.set_font("Arial", "B", 16)
+            pdf.cell(0, 10, "Checklist de Inspeção", 0, 1, "C")
+            pdf.ln(10)
+            
+            checklist_itens = {
+                "Inspeção de Solda": [
+                    "Furo de Solda", "Falta de Solda", "Solda Trincada", 
+                    "Respingo de Solda", "Solda Desplacada"
+                ],
+                "Conclusão Solda": ["Peça Aprovada", "Peça para retrabalho"],
+                "Inspeção de Pintura": [
+                    "Desplacamento", "Avarias", "Ausência de Pintura"
+                ],
+                "Conclusão Pintura": ["Peça Aprovada", "Peça para retrabalho"],
+                "Acessórios": [
+                    "Suporte Computador", "Olhal", "Fixação P.A", 
+                    "Guia de estrutura", "Porta Fusível"
+                ],
+                "Conclusão Acessórios": ["Peça Aprovada", "Peça para retrabalho"]
+            }
+            
+            for categoria, itens in checklist_itens.items():
+                pdf.set_font("Arial", "B", 12)
+                pdf.cell(0, 10, categoria, 0, 1)
+                pdf.set_font("Arial", "", 10)
+                
+                for item in itens:
+                    resposta = self.checklist_vars[item].get() if item in self.checklist_vars else "Não"
+                    pdf.cell(100, 8, item, border=1)
+                    pdf.cell(30, 8, resposta, border=1, ln=1)
+                
+                if "Conclusão" in categoria:
+                    pdf.ln(5)
+            
+            # Páginas de imagens
+            if self.imagens_adicionadas:
+                pdf.add_page()
+                pdf.set_font("Arial", "B", 16)
+                pdf.cell(0, 10, "Imagens da Inspeção", 0, 1, "C")
+                pdf.ln(10)
+                
+                for idx, img_info in enumerate(self.imagens_adicionadas):
+                    try:
+                        temp_path = f"temp_img_{idx}.png"
+                        img_info["cropped"].save(temp_path)
+                        
+                        if pdf.get_y() > 180:
+                            pdf.add_page()
+                            pdf.set_y(20)
+                        
+                        pdf.set_font("Arial", "", 12)
+                        pdf.cell(0, 10, f"Imagem {idx+1}", 0, 1, "C")
+                        
+                        x_pos = (pdf.w - 150) / 2
+                        pdf.image(temp_path, x=x_pos, y=pdf.get_y(), w=150)
+                        
+                        pdf.ln(180)
+                        pdf.ln(15)
+                        
+                        os.remove(temp_path)
+                        
+                    except Exception as e:
+                        print(f"Erro ao adicionar imagem {idx}: {e}")
+            
+            caminho = filedialog.asksaveasfilename(
+                defaultextension=".pdf",
+                filetypes=[("PDF Files", "*.pdf")],
+                title="Salvar PDF como"
+            )
+            
+            if caminho:
+                pdf.output(caminho)
+                print(f"PDF salvo em: {caminho}")
+            else:
+                print("Operação cancelada")
+                
+        except Exception as e:
+            print(f"Erro ao gerar PDF: {e}")
